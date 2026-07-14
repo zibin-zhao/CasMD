@@ -1,0 +1,81 @@
+#!/bin/bash
+# 4-step GROMACS pipeline: minimization → NVT → NPT → production.
+# Re-entrant: skips a step if its output already exists.
+
+set -euo pipefail
+
+GMX="{{ gmx_binary }}"
+
+echo "=========================================="
+echo "CasMD MD pipeline starting: $(date)"
+echo "Working dir: $(pwd)"
+echo "Hostname:    $(hostname)"
+echo "GMX binary:  $GMX"
+echo "=========================================="
+
+# Step 1: Energy minimization
+if [ ! -f em.gro ]; then
+    echo "[1/4] Energy minimization"
+    $GMX grompp -f step1_minimization.mdp -o em.tpr \
+                -c system.gro -r system.gro -p system.top -maxwarn 5
+    $GMX mdrun -v -deffnm em
+else
+    echo "[1/4] em.gro exists — skipping minimization"
+fi
+
+# Step 2: NVT equilibration
+if [ ! -f nvt.gro ]; then
+    echo "[2/4] NVT equilibration ({{ nvt_ps }} ps)"
+    $GMX grompp -f step2_nvt.mdp -o nvt.tpr \
+                -c em.gro -r em.gro -p system.top -maxwarn 5
+    $GMX mdrun -v -deffnm nvt
+else
+    echo "[2/4] nvt.gro exists — skipping NVT"
+fi
+
+# Step 3: NPT equilibration
+if [ ! -f npt.gro ]; then
+    echo "[3/4] NPT equilibration ({{ npt_ps }} ps)"
+    $GMX grompp -f step3_npt.mdp -o npt.tpr \
+                -c nvt.gro -r nvt.gro -t nvt.cpt -p system.top -maxwarn 5
+    $GMX mdrun -v -deffnm npt
+else
+    echo "[3/4] npt.gro exists — skipping NPT"
+fi
+
+# Step 4: Production
+if [ ! -f md.gro ]; then
+    echo "[4/4] Production MD ({{ production_ns }} ns)"
+    $GMX grompp -f step4_production.mdp -o md.tpr \
+                -c npt.gro -t npt.cpt -p system.top -maxwarn 5
+    $GMX mdrun -v -deffnm md
+else
+    echo "[4/4] md.gro exists — skipping production"
+fi
+
+# Step 5: Post-process — produce a topology .gro whose atom count
+# matches md.xtc exactly. Many MD setups strip water/ions from the
+# saved trajectory to keep .xtc small, so the full-system md.gro
+# (which keeps water) won't load as a topology against md.xtc.
+# Dumping frame 0 of md.xtc gives us a .gro with the exact atom
+# selection the trajectory contains, no matter what the user's MDP
+# wrote.
+if [ ! -f md_solute.gro ]; then
+    echo "[5/5] Post-process: extracting matching topology from md.xtc"
+    echo "System" | $GMX trjconv -s md.tpr -f md.xtc -o md_solute.gro -dump 0 2>&1 | tail -3
+else
+    echo "[5/5] md_solute.gro exists — skipping post-process"
+fi
+
+echo "=========================================="
+echo "CasMD MD pipeline complete: $(date)"
+echo "Outputs:"
+echo "  md.xtc        Trajectory (every {{ output_every_ps }} ps)"
+echo "  md.gro        Final frame, full system"
+echo "  md_solute.gro Topology matching md.xtc atom count (use for analysis)"
+echo "  md.edr        Energies"
+echo "  md.log        GROMACS log"
+echo ""
+echo "Next: run analyze.py against md.xtc + md_solute.gro"
+echo "  python analyze.py --top md_solute.gro --xtc md.xtc -o analysis/"
+echo "=========================================="

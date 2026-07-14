@@ -1,0 +1,49 @@
+; NVT Equilibration ({{ nvt_ps }} ps at {{ temperature_K }} K)
+;
+integrator              = md
+dt                      = {{ "%.3f"|format(timestep_fs / 1000) }}
+nsteps                  = {{ nvt_steps }}
+
+; Output
+nstxout                 = 0
+nstvout                 = 0
+nstfout                 = 0
+nstxout-compressed      = {{ output_every_steps }}
+nstenergy               = {{ output_every_steps }}
+nstlog                  = {{ output_every_steps }}
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+nstlist                 = 20
+rlist                   = 0.9
+pbc                     = xyz
+
+; Electrostatics
+coulombtype             = PME
+rcoulomb                = 0.9
+
+; VdW
+vdwtype                 = Cut-off
+vdw-modifier            = None
+rvdw                    = 0.9
+DispCorr                = EnerPres
+
+; Temperature coupling
+tcoupl                  = v-rescale
+tc_grps                 = System
+tau_t                   = 1.0
+ref_t                   = {{ temperature_K }}
+
+; Pressure coupling — off in NVT
+pcoupl                  = no
+
+; Constraints
+constraints             = h-bonds
+constraint_algorithm    = LINCS
+lincs_iter              = 1
+lincs_order             = 4
+
+; Velocity generation
+gen_vel                 = yes
+gen-temp                = {{ temperature_K }}
+gen_seed                = -1

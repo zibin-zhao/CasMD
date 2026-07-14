@@ -1,0 +1,23 @@
+# StrandMD scientific-workbench theme. Locked to light mode.
+
+[theme]
+base = "light"
+primaryColor = "#0b7285"
+backgroundColor = "#f7f9f8"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#172b35"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+runOnSave = true
+# HF Spaces serves the app inside an iframe; XSRF tokens don't survive
+# the iframe's origin boundary, so file uploads get 403'd unless we turn
+# protection off here. Same reason CORS must be permissive.
+enableXsrfProtection = false
+enableCORS = false
+# Prediction bundles (AF3, Boltz-2, Protenix) can run 20-50 MB; raise the
+# default 200 MB ceiling so the uploader doesn't reject larger jobs.
+maxUploadSize = 500

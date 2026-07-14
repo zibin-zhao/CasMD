@@ -1,0 +1,12 @@
+{
+  "n_frames": 50000,
+  "equil_skip": 10000,
+  "protein_rmsd_A": {
+    "equilibrated_mean": 2.8998976778633048,
+    "max": 3.702687877096718
+  },
+  "protein_rmsf_A_mean": 0.8611000440722985,
+  "protein_rg_A": {
+    "equilibrated_mean": 38.10786279828631
+  }
+}

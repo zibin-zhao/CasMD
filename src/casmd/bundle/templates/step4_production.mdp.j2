@@ -1,0 +1,51 @@
+; Production MD — {{ production_ns }} ns at {{ temperature_K }} K, 1 bar
+; NO position restraints
+;
+integrator              = md
+dt                      = {{ "%.3f"|format(timestep_fs / 1000) }}
+nsteps                  = {{ production_steps }}
+
+; Output — every {{ output_every_ps }} ps
+nstxout                 = 0
+nstvout                 = 0
+nstfout                 = 0
+nstxout-compressed      = {{ output_every_steps }}
+nstenergy               = {{ output_every_steps }}
+nstlog                  = {{ output_every_steps }}
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+nstlist                 = 20
+rlist                   = 0.9
+pbc                     = xyz
+
+; Electrostatics
+coulombtype             = PME
+rcoulomb                = 0.9
+
+; VdW
+vdwtype                 = Cut-off
+vdw-modifier            = None
+rvdw                    = 0.9
+DispCorr                = EnerPres
+
+; Temperature coupling
+tcoupl                  = v-rescale
+tc_grps                 = System
+tau_t                   = 1.0
+ref_t                   = {{ temperature_K }}
+
+; Pressure coupling
+pcoupl                  = Parrinello-Rahman
+pcoupltype              = isotropic
+tau_p                   = 5.0
+ref_p                   = 1.0
+compressibility         = 4.5e-5
+
+; Constraints
+constraints             = h-bonds
+constraint_algorithm    = LINCS
+lincs_iter              = 1
+lincs_order             = 4
+
+continuation            = yes
